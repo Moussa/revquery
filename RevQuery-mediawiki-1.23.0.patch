@@ -1,0 +1,73 @@
+diff --git a/includes/ImagePage.php b/includes/ImagePage.php
+index 997a948..77861b9 100644
+--- includes/ImagePage.php
++++ includes/ImagePage.php
+@@ -618,8 +618,13 @@ EOT
+ 		$params['height'] = $height;
+ 		$thumbnail = $this->displayImg->transform( $params );
+ 		if ( $thumbnail && !$thumbnail->isError() ) {
++			$url = $thumbnail->getUrl();
++			global $wgRevQueryTimestamps;
++			if ( $wgRevQueryTimestamps ) {
++				$url .= '?t=' . $this->displayImg->getTimestamp();
++			}
+ 			return Html::rawElement( 'a', array(
+-				'href' => $thumbnail->getUrl(),
++				'href' => $url,
+ 				'class' => 'mw-thumbnail-link'
+ 				), wfMessage( 'show-big-image-size' )->numParams(
+ 					$thumbnail->getWidth(), $thumbnail->getHeight()
+@@ -1228,6 +1233,10 @@ class ImageHistoryList extends ContextSource {
+ 			$row .= '<span class="history-deleted">' . $url . '</span>';
+ 		} else {
+ 			$url = $iscur ? $this->current->getUrl() : $this->current->getArchiveUrl( $img );
++			global $wgRevQueryTimestamps;
++			if ( $wgRevQueryTimestamps ) {
++				$url .= '?t=' . $timestamp;
++			}
+ 			$row .= Xml::element( 'a', array( 'href' => $url ), $lang->userTimeAndDate( $timestamp, $user ) );
+ 		}
+ 		$row .= "</td>";
+diff --git a/includes/Linker.php b/includes/Linker.php
+index 534ad4d..c49ed53 100644
+--- includes/Linker.php
++++ includes/Linker.php
+@@ -993,6 +993,10 @@ class Linker {
+ 	public static function makeMediaLinkFile( Title $title, $file, $html = '' ) {
+ 		if ( $file && $file->exists() ) {
+ 			$url = $file->getURL();
++			global $wgRevQueryTimestamps;
++			if ( $wgRevQueryTimestamps ) {
++				$url .= '?t=' . $file->getTimestamp();
++			}
+ 			$class = 'internal';
+ 		} else {
+ 			$url = self::getUploadUrl( $title );
+diff --git a/includes/media/MediaTransformOutput.php b/includes/media/MediaTransformOutput.php
+index 05feb30..7bfc87d 100644
+--- includes/media/MediaTransformOutput.php
++++ includes/media/MediaTransformOutput.php
+@@ -373,6 +373,10 @@ class ThumbnailImage extends MediaTransformOutput {
+ 			);
+ 		} elseif ( !empty( $options['file-link'] ) ) {
+ 			$linkAttribs = array( 'href' => $this->file->getURL() );
++			global $wgRevQueryTimestamps;
++			if ( $wgRevQueryTimestamps ) {
++				$linkAttribs['href'] .= '?t=' . $this->file->getTimestamp();
++			}
+ 		} else {
+ 			$linkAttribs = false;
+ 		}
+@@ -405,7 +409,11 @@ class ThumbnailImage extends MediaTransformOutput {
+ 		}
+ 
+ 		wfRunHooks( 'ThumbnailBeforeProduceHTML', array( $this, &$attribs, &$linkAttribs ) );
+-
++		
++		global $wgRevQueryTimestamps;
++		if ( $wgRevQueryTimestamps ) {
++			$attribs['src'] .= '?t=' . $this->file->getTimestamp();
++		}
+ 		return $this->linkWrap( $linkAttribs, Xml::element( 'img', $attribs ) );
+ 	}
+ }
